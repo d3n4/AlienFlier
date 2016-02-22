@@ -362,7 +362,7 @@ declare module CraftyModule {
         enableDrag(): Entity;
     }
 
-    interface Reel extends String, Object {
+    interface Reel extends Object {
 
     }
 
