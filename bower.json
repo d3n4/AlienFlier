@@ -17,6 +17,7 @@
     "tests"
   ],
   "dependencies": {
-    "crafty": "^0.7.0"
+    "crafty": "^0.7.0",
+    "socket.io-client": "^1.4.5"
   }
 }
