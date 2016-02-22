@@ -1,0 +1,33 @@
+# Logs
+logs
+*.log
+
+pids
+*.pid
+*.seed
+
+lib-cov
+
+coverage
+
+.grunt
+
+.lock-wscript
+
+build/Release
+
+node_modules
+
+npm-debug.log
+
+
+
+# IDEA Meta info
+/.idea
+
+# Generated sources
+/public/**/*.css
+/public/**/*.map
+
+# Bower components
+/public/scripts/libraries

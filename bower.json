@@ -1,0 +1,22 @@
+{
+  "name": "AlienFlier",
+  "description": "",
+  "main": "app.js",
+  "authors": [
+    "Mechislav Lipskiy <id110099122@gmail.com>"
+  ],
+  "license": "MIT",
+  "moduleType": [],
+  "homepage": "",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "public/scripts/libraries",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "crafty": "^0.7.0"
+  }
+}
