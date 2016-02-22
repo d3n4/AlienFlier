@@ -1,13 +1,81 @@
 interface Crafty {
+    support: CraftySupport;
+    settings: CraftySettings;
+    diamondIso: DiamondIso;
+    isometric: Isometric;
+    math: CraftyMath;
+    asset: CraftyAsset;
+    assets: any;
+    circle: CraftyCircle;
+
     (selector: string): Entities;
     (id: number): Entity;
 
     get(): Entities;
     get(index: number): Entity;
 
-    diamondIso: DiamondIso;
-    isometric: Isometric;
-    math: CraftyMath;
+    e(componentList: string): Entity;
+    e(...component: string[]): Entity;
+
+    c(name: string, component: any): void;
+
+    defineField(ent: Entity, property: string, getCallback: Function, setCallback: Function): Crafty;
+    clone(obj: Entity): Entity;
+    extend(obj: Object): Crafty;
+    frame(): number;
+    getVersion(): string;
+
+    init(): Crafty;
+    init(width: number): Crafty;
+    init(width: number, height: number): Crafty;
+    init(width: number, height: number, stage_elem: string): Crafty;
+    init(width: number, height: number, stage_elem: HTMLElement): Crafty;
+
+    isPaused(): boolean;
+    one(eventName: string, callback: Function): number;
+    pause(): Crafty;
+
+    s(name: string, template: Object, lazy?: boolean): any;
+    s(name: string): any;
+
+    bind(eventName: string, callback: Function): Entity;
+    unbind(eventName: string, callback?: Function): Entity;
+    uniqueBind(eventName: string, callback: Function): number;
+
+    trigger(eventName: String, data: any): void;
+    stop(clearState?: boolean): Crafty;
+
+    background(style: string): void;
+    pixelart(enabled: boolean): void;
+}
+
+interface CraftyCircle {
+    containsPoint(x: number, y: number): boolean;
+    shift(x: number, y: number): void;
+}
+
+interface CraftyAsset {
+    asset(key: String, asset: Object): void;
+    asset(key: String): any;
+}
+
+interface CraftySupport {
+    audio: boolean;
+    canvas: boolean;
+    css3dtransform: boolean;
+    defineProperty: boolean;
+    devicemotion: boolean;
+    deviceorientation: boolean;
+    prefix: string;
+    version: number;
+    versionName: string;
+    webgl: boolean;
+}
+
+interface CraftySettings {
+    get(settingName: string): any;
+    modify(settingName: string, value: any): void;
+    register(settingName: string, callback: Function): void;
 }
 
 interface Rectangle {
@@ -49,7 +117,7 @@ interface Vector2D {
     setValues(vector: Vector2D): Vector2D;
     setValues(x: number, y: number): Vector2D;
     subtract(vector: Vector2D): Vector2D;
-    toString(): string;
+    tostring(): string;
     translate(x: number, y: number): Vector2D;
     tripleProduct(vector1: Vector2D, vector2: Vector2D, vector3: Vector2D, vector4: Vector2D): Vector2D;
 }
@@ -95,6 +163,11 @@ interface BaseEntity {
     trigger(eventName: string, data?: any): Entity;
     unbind(eventName: string, callback?: Function): Entity;
     uniqueBind(eventName: string, callback: Function): number;
+    trigger(eventName: String, data: any): void;
+}
+
+interface ComponentFourway {
+    fourway(speed?: number): Entity;
 }
 
 interface ComponentDraggable {
@@ -111,22 +184,40 @@ interface Reel extends String, Object {
 
 interface ComponentSpriteAnimation {
     animationSpeed: Reel;
-    animate(reelId?: String, loopCount?: Number): Entity;
+    animate(reelId?: string, loopCount?: number): Entity;
     getReel(): Reel;
     getReel(reelId): Reel;
-    isPlaying(reelId?: String): boolean;
-    loops(loopCount: Number): Entity;
+    isPlaying(reelId?: string): boolean;
+    loops(loopCount: number): Entity;
     loops(): number;
     pauseAnimation(): Entity;
-    reel(reelId: String, duration: number, fromX: Number, fromY: Number, frameCount: Number): Entity;
-    reel(reelId: String, duration: number, frames: any): Entity;
-    reel(reelId: String): Entity;
+    reel(reelId: string, duration: number, fromX: number, fromY: number, frameCount: number): Entity;
+    reel(reelId: string, duration: number, frames: any): Entity;
+    reel(reelId: string): Entity;
     reel(): Reel;
-    reelPosition(position: Number): Entity;
-    reelPosition(position: String): Entity;
+    reelPosition(position: number): Entity;
+    reelPosition(position: string): Entity;
     reelPosition(): number;
     resetAnimation(): Entity;
     resumeAnimation(): Entity;
+}
+
+interface ComponentDOM {
+    _element: HTMLElement;
+    avoidCss3dTransforms: boolean;
+    css(property: string, value: string): void;
+    css(map: Object): void;
+    DOM(elem: HTMLElement): Entity;
+}
+
+interface WebGL {
+    context: WebGLRenderingContext;
+}
+
+interface ComponentHTML {
+    append(html: string): Entity;
+    prepend(html: string): Entity;
+    replace(html: string): Entity;
 }
 
 interface ComponentSupportable {
@@ -135,11 +226,11 @@ interface ComponentSupportable {
 }
 
 interface ComponentTween {
-    cancelTween(target: String): Entity;
+    cancelTween(target: string): Entity;
     cancelTween(target: Object): Entity;
     pauseTweens(): Entity;
     resumeTweens(): Entity;
-    tween(properties: Object, duration: Number, easingFn: Function): Entity;
+    tween(properties: Object, duration: number, easingFn: Function): Entity;
 }
 
 interface ComponentMotion {
@@ -164,16 +255,16 @@ interface ComponentGravity {
 interface Isometric {
     area(): any;
     centerAt(): any;
-    centerAt(x: Number, y: Number): Isometric;
-    place(x: Number, y: Number, z: Number, tile: Entity): Isometric;
-    pos(x: Number, y: Number): any;
-    px(left: Number, top: Number): any;
-    size(tileSize: Number): Isometric;
+    centerAt(x: number, y: number): Isometric;
+    place(x: number, y: number, z: number, tile: Entity): Isometric;
+    pos(x: number, y: number): any;
+    px(left: number, top: number): any;
+    size(tileSize: number): Isometric;
 }
 
 interface DiamondIso {
-    init(tileWidth: Number, tileHeight: Number, mapWidth: Number, mapHeight: Number): DiamondIso;
-    place(tile: Entity, x: Number, y: Number, layer: Number): void;
+    init(tileWidth: number, tileHeight: number, mapWidth: number, mapHeight: number): DiamondIso;
+    place(tile: Entity, x: number, y: number, layer: number): void;
 }
 
 interface ComponentCollision {
@@ -189,6 +280,25 @@ interface ComponentCollision {
     resetHitChecks(): Entity;
     resetHitChecks(componentList: string): Entity;
     resetHitChecks(...component: string[]): Entity;
+}
+
+interface ComponentJumper {
+    canJump: boolean;
+    disableControl(): Entity;
+    enableControl(): Entity;
+    jumper(jumpSpeed?: Number, jumpKeys?: any): Entity;
+    jumpSpeed(jumpSpeed: Number): Entity;
+}
+
+interface ComponentMultiway {
+    disableControl(): Entity;
+    enableControl(): Entity;
+    multiway(speed?: Number, keyBindings?: Object): Entity;
+    speed(speed: Object): Entity;
+}
+
+interface ComponentTwoway {
+    twoway(speed?: Number, jumpSpeed?: Number): Entity;
 }
 
 interface Component2D {
@@ -242,7 +352,13 @@ interface Entity extends BaseEntity,
     ComponentSupportable,
     ComponentTween,
     ComponentSpriteAnimation,
-    ComponentDraggable {
+    ComponentDraggable,
+    ComponentFourway,
+    ComponentJumper,
+    ComponentMultiway,
+    ComponentTwoway,
+    ComponentDOM,
+    ComponentHTML {
 }
 
 declare var Crafty: Crafty;
