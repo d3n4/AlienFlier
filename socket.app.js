@@ -5,6 +5,11 @@ var uuid = require('node-uuid');
 var GAME_WIDTH = 800;
 var GAME_HEIGHT = 480;
 
+Number.prototype.map = function (in_min, in_max, out_min, out_max) {
+    return (this - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+
 function app(server, app) {
 
     class Player {
@@ -74,8 +79,9 @@ function app(server, app) {
                     x: 0,
                     y: 100 + i * 32,
 
+                    rotation: 0,
 
-                    force: 35,
+                    force: 3,
                     vy: 0,
                     vx: 0,
                     _vy: 0,
@@ -83,8 +89,8 @@ function app(server, app) {
                     _vdx: 0,
                     _vdy: 0,
 
-                    speed: 30,
-                    gravity: 90
+                    speed: 5,
+                    gravity: 15
                 };
             });
         }
@@ -97,11 +103,11 @@ function app(server, app) {
                 e.data.x += e.data.speed * deltaTime;
 
                 if (e.data.vx) {
-                    if(e.data.vx < 0) {
+                    if (e.data.vx < 0) {
                         e.data._vx = e.data.vx * -1;
                         e.data._vdx = -1;
                     }
-                    if(e.data.vx > 0) {
+                    if (e.data.vx > 0) {
                         e.data._vx = e.data.vx;
                         e.data._vdx = 1;
                     }
@@ -109,11 +115,11 @@ function app(server, app) {
                     e.data.vx = 0;
                 }
                 if (e.data.vy) {
-                    if(e.data.vy < 0) {
+                    if (e.data.vy < 0) {
                         e.data._vy = e.data.vy * -1;
                         e.data._vdy = -1;
                     }
-                    if(e.data.vy > 0) {
+                    if (e.data.vy > 0) {
                         e.data._vy = e.data.vy;
                         e.data._vdy = 1;
                     }
@@ -121,26 +127,48 @@ function app(server, app) {
                     e.data.vy = 0;
                 }
 
-                if(e.data._vx > 0) {
-                    e.data._vx -= e.data.force * deltaTime;
-                    e.data.x += (e.data.force * deltaTime) * e.data._vdx;
+                if (e.data._vx > 0) {
+                    e.data._vx -= e.data.force * e.data.gravity * deltaTime;
+                    e.data.x += (e.data.force * e.data.gravity * deltaTime) * e.data._vdx;
                 }
-                if(e.data._vy > 0) {
-                    e.data._vy -= e.data.force * deltaTime;
-                    e.data.y += (e.data.force * deltaTime) * e.data._vdy;
+                if (e.data._vy > 0) {
+                    e.data._vy -= e.data.force * e.data.gravity * deltaTime;
+                    e.data.y += (e.data.force * e.data.gravity * deltaTime) * e.data._vdy;
                 }
 
-                if(e.data.y > (GAME_HEIGHT - 32)) {
+                if (e.data.y > (GAME_HEIGHT - 32)) {
                     e.data.y = GAME_HEIGHT - 32;
-                    console.log('player die');
+                }
+
+                if (e.data.x > (GAME_WIDTH / 2 - 16)) {
+                    e.data.x = (GAME_WIDTH / 2 - 16);
+                }
+
+                if (e.data.y < 0) {
+                    e.data.y = 0;
                 }
 
                 var input = e.inputPool.shift();
 
                 // jump
                 if (input == 32) {
-                    e.data.vy = -30;
+                    e.data.vy = -128;
+                    e.data.rotation = -45;//315;
                 }
+
+                if (e.data.rotation < 45) {
+                    e.data.rotation++;
+                }
+
+                //if(e.data.rotation >= 315 || e.data.rotation < 45) {
+                //    e.data.rotation++;
+                //}
+                //
+                //if(e.data.rotation > 360) {
+                //    e.data.rotation = 0;
+                //}
+
+
             });
 
             this.renderWorld();
@@ -179,7 +207,7 @@ function app(server, app) {
                 let current_time = +new Date();
                 this.update((current_time - last_update) / 100);
                 last_update = current_time;
-            }, 33);
+            }, 11);
         }
 
         join(player) {

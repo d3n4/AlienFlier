@@ -38,7 +38,7 @@ let players = {};
 let PLAYER_ID = window['PLAYER_ID'];
 
 function createPlayerEntity(data) {
-    return Crafty.e('2D, Canvas, Color').attr({w: 32, h: 32}).color('red');
+    return Crafty.e('2D, Canvas, Color').attr({w: 32, h: 32}).color('red').origin('center');
 }
 
 function updatePlayer(id, name, data) {
@@ -46,7 +46,7 @@ function updatePlayer(id, name, data) {
     if (typeof players[id] == 'undefined') {
         player = players[id] = createPlayerEntity(data);
         if (PLAYER_ID == id) {
-            Crafty.viewport.follow(player, 0, 0);
+            //Crafty.viewport.follow(player, 0, 0);
             player.z = 100;
             player._globalZ = 100;
         } else {
@@ -55,7 +55,7 @@ function updatePlayer(id, name, data) {
     } else
         player = players[id];
 
-    player.attr({x: data.x, y: data.y});
+    player.attr({x: data.x, y: data.y, rotation: data.rotation});
 }
 
 socket.on('update', e => {
