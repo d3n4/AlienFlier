@@ -1,3 +1,12 @@
 <h1>{{message}}</h1>
+{{#if error}}
 <h2>{{error.status}}</h2>
 <pre>{{error.stack}}</pre>
+{{/if}}
+
+{{#if lobby}}
+<a href="/game/lobby/{{lobby}}" class="btn btn-default">Back to lobby</a>
+{{/if}}
+{{#if lobby_list}}
+<a href="/game/lobbies" class="btn btn-default">Back to lobbies</a>
+{{/if}}

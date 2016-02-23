@@ -5,14 +5,12 @@ declare module CraftyModule {
         diamondIso: DiamondIso;
         isometric: Isometric;
         math: CraftyMath;
-        asset: CraftyAsset;
         assets: any;
         circle: CraftyCircle;
         keys: CraftyKeys;
-        paths: CraftyAsset;
         mobile: boolean;
         viewport: CraftyViewport;
-
+        timer: CraftyTimer;
 
         (selector: string): Entities;
         (id: number): Entity;
@@ -57,7 +55,7 @@ declare module CraftyModule {
         scene(sceneName: string, init: Function, uninit?: Function): void;
         scene(sceneName: string, data: any): void;
 
-        removeAssets(assets: CraftyAsset): void;
+        removeAssets(assets: CraftyAssetObject): void;
 
         sprite(tile?: number, tileh?: number, url?: string, map?: Object, paddingX?: number, paddingY?: number, paddingAroundBorder?: boolean): Crafty;
 
@@ -65,6 +63,27 @@ declare module CraftyModule {
 
         deviceMotion(callback: Function): void;
         deviceOrientation(callback: Function): void;
+
+        asset(key: String, asset: CraftyAssetObject): void;
+        asset(key: String): any;
+
+        paths(paths: CraftyAssetObject);
+        paths();
+
+        findClosestEntityByComponent(component: string, x: number, y: number, target?: Entity): Entity;
+    }
+
+    interface ComponentDelay {
+        cancelDelay(callback: Function): void;
+        delay(callback: Function, delay: number, repeat?: number, callbackOff?: Function): void;
+    }
+
+    interface CraftyTimer {
+        FPS(): number;
+        FPS(value: number): void;
+        simulateFrames(frames: number, timestep?: number): void;
+        step(): void;
+        steptype(mode: string, maxTimeStep?: number): void;
     }
 
     interface CraftyViewport {
@@ -221,7 +240,7 @@ declare module CraftyModule {
         PULT_RIGHT: number;
     }
 
-    interface CraftyAsset {
+    interface CraftyAssetObject {
         audio: Object;
         images: Object;
         sprites: Object;
@@ -230,11 +249,6 @@ declare module CraftyModule {
     interface CraftyCircle {
         containsPoint(x: number, y: number): boolean;
         shift(x: number, y: number): void;
-    }
-
-    interface CraftyAsset {
-        asset(key: String, asset: CraftyAsset): void;
-        asset(key: String): any;
     }
 
     interface CraftySupport {
@@ -568,7 +582,8 @@ declare module CraftyModule {
         ComponentColor,
         ComponentImage,
         ComponentText,
-        ComponentParticles {
+        ComponentParticles,
+        ComponentDelay {
     }
 }
 

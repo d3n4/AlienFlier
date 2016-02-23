@@ -1,0 +1,80 @@
+{{#if player.firstConnect}}
+    <script>
+        swal({
+            title: "Your name",
+            text: "Type your name/nickname below:",
+            type: "input",
+            showCancelButton: true,
+            closeOnConfirm: false,
+            inputPlaceholder: "Steve",
+            showLoaderOnConfirm: true
+
+        }, function (inputValue) {
+            if (inputValue === false) return false;
+            if (inputValue === "") {
+                swal.showInputError("Name cannot be an empty");
+                return false
+            }
+
+            $.post('/game/set', {name: inputValue}, function () {
+                swal("Nice!", "Your name has been set to " + inputValue, "success");
+            });
+        });
+    </script>
+{{/if}}
+
+{{#if player.lobby}}
+    {{#if player.lobby.is_playing}}
+        <script>
+            document.location.href = '/game/play/{{player.lobby.id}}';
+        </script>
+    {{/if}}
+{{/if}}
+
+<div class="page-header">
+    <h1>
+        Game lobbies
+
+        <small class="pull-right">
+            <a href="/game/create" class="btn btn-default">
+                Create
+            </a>
+        </small>
+    </h1>
+</div>
+
+<table class="table table-hover lobby-list">
+    <thead>
+    <tr>
+        <th>
+            Name
+        </th>
+        <th>
+            Players
+        </th>
+        <th>
+            Actions
+        </th>
+    </tr>
+    </thead>
+    <tbody>
+    {{#each lobbies}}
+        {{#if visible}}
+            <tr id="lobby-{{id}}">
+                <td>
+                    {{name}}
+                </td>
+                <td>
+                    {{players.length}}/{{max_players}}
+                </td>
+                <td width="1%">
+                    <a href="/game/lobby/{{id}}" class="btn btn-default">
+                        Join
+                    </a>
+                </td>
+            </tr>
+        {{/if}}
+    {{/each}}
+    </tbody>
+</table>
+
