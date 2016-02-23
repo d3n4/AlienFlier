@@ -2,6 +2,9 @@
 
 var uuid = require('node-uuid');
 
+var GAME_WIDTH = 800;
+var GAME_HEIGHT = 480;
+
 function app(server, app) {
 
     class Player {
@@ -70,10 +73,18 @@ function app(server, app) {
                 e.data = {
                     x: 0,
                     y: 100 + i * 32,
+
+
+                    force: 35,
                     vy: 0,
                     vx: 0,
-                    speed: 5,
-                    gravity: 4
+                    _vy: 0,
+                    _vx: 0,
+                    _vdx: 0,
+                    _vdy: 0,
+
+                    speed: 30,
+                    gravity: 90
                 };
             });
         }
@@ -85,26 +96,50 @@ function app(server, app) {
                 e.data.y += e.data.gravity * deltaTime;
                 e.data.x += e.data.speed * deltaTime;
 
-                // apply velocity
                 if (e.data.vx) {
                     if(e.data.vx < 0) {
-                        e.data.vx++;
-                        e.data.x--;
+                        e.data._vx = e.data.vx * -1;
+                        e.data._vdx = -1;
                     }
-                    if(e.data.vx >0) {
-                        e.data.vx--;
-                        e.data.x++;
+                    if(e.data.vx > 0) {
+                        e.data._vx = e.data.vx;
+                        e.data._vdx = 1;
                     }
+
+                    e.data.vx = 0;
                 }
                 if (e.data.vy) {
+                    if(e.data.vy < 0) {
+                        e.data._vy = e.data.vy * -1;
+                        e.data._vdy = -1;
+                    }
+                    if(e.data.vy > 0) {
+                        e.data._vy = e.data.vy;
+                        e.data._vdy = 1;
+                    }
 
+                    e.data.vy = 0;
+                }
+
+                if(e.data._vx > 0) {
+                    e.data._vx -= e.data.force * deltaTime;
+                    e.data.x += (e.data.force * deltaTime) * e.data._vdx;
+                }
+                if(e.data._vy > 0) {
+                    e.data._vy -= e.data.force * deltaTime;
+                    e.data.y += (e.data.force * deltaTime) * e.data._vdy;
+                }
+
+                if(e.data.y > (GAME_HEIGHT - 32)) {
+                    e.data.y = GAME_HEIGHT - 32;
+                    console.log('player die');
                 }
 
                 var input = e.inputPool.shift();
 
                 // jump
                 if (input == 32) {
-
+                    e.data.vy = -30;
                 }
             });
 
@@ -144,7 +179,7 @@ function app(server, app) {
                 let current_time = +new Date();
                 this.update((current_time - last_update) / 100);
                 last_update = current_time;
-            }, 500);
+            }, 33);
         }
 
         join(player) {

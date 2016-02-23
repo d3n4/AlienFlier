@@ -12,13 +12,13 @@ declare module CraftyModule {
         viewport: CraftyViewport;
         timer: CraftyTimer;
 
-        (selector: string): Entities;
-        (id: number): Entity;
+        //(selector: string): Entities;
+        //(id: number): Entity;
 
         get(): Entities;
         get(index: number): Entity;
 
-        e(componentList: string): Entity;
+        //e(components: string): Entity;
         e(...component: string[]): Entity;
 
         c(name: string, component: any): void;
@@ -428,7 +428,7 @@ declare module CraftyModule {
         cancelTween(target: Object): Entity;
         pauseTweens(): Entity;
         resumeTweens(): Entity;
-        tween(properties: Object, duration: number, easingFn: Function): Entity;
+        tween(properties: Object, duration: number, easingFn?: Function): Entity;
     }
 
     interface ComponentMotion {
