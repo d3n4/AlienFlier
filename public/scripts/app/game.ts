@@ -92,7 +92,7 @@ var MAIN_PLAYER = null;
 
 setInterval(function () {
     if (MAIN_PLAYER)
-        Crafty.viewport.x = -(MAIN_PLAYER.x - (GAME_WIDTH / 2));
+        Crafty.viewport.x = -(MAIN_PLAYER.x - (Crafty.viewport.width / 2));
 }, 1);
 
 var entities = {};
