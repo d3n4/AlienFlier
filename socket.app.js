@@ -7,6 +7,10 @@ var GAME_HEIGHT = 480;
 
 Number.prototype.map = function (in_min, in_max, out_min, out_max) {
     return (this - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+};
+
+function rand(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 
@@ -24,6 +28,7 @@ function app(server, app) {
             this.firstConnect = true;
             this.data = {};
             this.inputPool = [];
+            this.level = 1;
         }
 
         leaveLobby() {
@@ -40,6 +45,11 @@ function app(server, app) {
         update() {
 
         }
+
+        collide(pid, target) {
+            if (this.lobby)
+                this.lobby.collide(pid, target);
+        }
     }
 
     class Lobby {
@@ -48,25 +58,31 @@ function app(server, app) {
             this.name = name;
             this.max_players = 6;
             this.players = [owner];
+            this.entities = [];
             this.owner = owner;
             this.is_playing = false;
             this.visible = true;
             owner.lobby = this;
             this.gameThread = null;
+            this.ticks = 0;
+            this.tickrate = 100;
+            this.time = 0;
+            this.sequence = 30;
 
             this.lobbyUpdate();
         }
 
         renderWorld() {
+            var self = this;
             var players = [];
 
             this.players.forEach(function (e) {
-                players.push({id: e.id, data: e.data});
+                players.push({id: e.id, name: e.name, data: e.data});
             });
 
             this.players.forEach(function (e) {
                 if (e.socket) {
-                    e.socket.emit('update', players);
+                    e.socket.emit('update', players, self.entities);
                 }
             });
 
@@ -77,11 +93,12 @@ function app(server, app) {
             this.players.forEach(function (e, i) {
                 e.data = {
                     x: 0,
-                    y: 100 + i * 32,
+                    y: GAME_HEIGHT / 2 - 32,//100 + i * 32,
 
                     rotation: 0,
 
-                    force: 3,
+                    force_x: 5,
+                    force_y: 3,
                     vy: 0,
                     vx: 0,
                     _vy: 0,
@@ -89,15 +106,75 @@ function app(server, app) {
                     _vdx: 0,
                     _vdy: 0,
 
-                    speed: 5,
+                    vspeed: 0,
+
+                    speed: 15,
                     gravity: 15
                 };
             });
         }
 
+        getPlayer(id) {
+            var player = null;
+            this.players.forEach(function (e) {
+                if (id == e.id)
+                    player = e;
+            });
+            return player;
+        }
+
+        createEntity(type, data) {
+            this.entities.push({
+                id: uuid.v1(),
+                type: type,
+                data: data
+            });
+        }
+
+        die(player) {
+            this.leave(player);
+
+            if (player.socket) {
+                player.socket.emit('death', player.points);
+            }
+        }
+
+        collide(pid, target) {
+            if (target == 'BOTTOM_BLOCK_DIRT' || target == 'TOP_BLOCK_DIRT') {
+                var player = this.getPlayer(pid);
+                console.log('player died', pid, target, player);
+                if (player) {
+                    this.die(player);
+                }
+            }
+        }
+
         update(deltaTime) {
 
+            var self = this;
+
+            this.level = Math.round(this.ticks / 100);
+
+            let position = {
+                max: {
+                    x: 0,
+                    y: 0
+                },
+
+                min: {
+                    x: null,
+                    y: null
+                }
+            };
+
             this.players.forEach(e => {
+
+                let last_x = e.data.x;
+
+                if (e.points < self.ticks)
+                    e.points = self.ticks;
+
+                e.data.speed = 15 + Math.round(self.level / 2);
 
                 e.data.y += e.data.gravity * deltaTime;
                 e.data.x += e.data.speed * deltaTime;
@@ -128,21 +205,22 @@ function app(server, app) {
                 }
 
                 if (e.data._vx > 0) {
-                    e.data._vx -= e.data.force * e.data.gravity * deltaTime;
-                    e.data.x += (e.data.force * e.data.gravity * deltaTime) * e.data._vdx;
+                    e.data._vx -= e.data.force_x * deltaTime;
+                    e.data.x += (e.data.force_x * deltaTime) * e.data._vdx;
                 }
                 if (e.data._vy > 0) {
-                    e.data._vy -= e.data.force * e.data.gravity * deltaTime;
-                    e.data.y += (e.data.force * e.data.gravity * deltaTime) * e.data._vdy;
+                    e.data._vy -= e.data.force_y * e.data.gravity * deltaTime;
+                    e.data.y += (e.data.force_y * e.data.gravity * deltaTime) * e.data._vdy;
                 }
 
                 if (e.data.y > (GAME_HEIGHT - 32)) {
                     e.data.y = GAME_HEIGHT - 32;
                 }
 
-                if (e.data.x > (GAME_WIDTH / 2 - 16)) {
-                    e.data.x = (GAME_WIDTH / 2 - 16);
-                }
+                // viewport based now
+                //if (e.data.x > (GAME_WIDTH / 2 - 16)) {
+                //    e.data.x = (GAME_WIDTH / 2 - 16);
+                //}
 
                 if (e.data.y < 0) {
                     e.data.y = 0;
@@ -150,26 +228,129 @@ function app(server, app) {
 
                 var input = e.inputPool.shift();
 
+                if (e.data.rotation < 45) {
+                    e.data.rotation += 15;
+                }
+
                 // jump
                 if (input == 32) {
-                    e.data.vy = -128;
-                    e.data.rotation = -45;//315;
+                    e.data.vy = -100;
+                    e.data.rotation = -60;//315;
+                    e.data.tween_rot = true;
                 }
 
-                if (e.data.rotation < 45) {
-                    e.data.rotation++;
+                if (input == 16) {
+                    e.data.vx = 50;
                 }
 
-                //if(e.data.rotation >= 315 || e.data.rotation < 45) {
-                //    e.data.rotation++;
-                //}
-                //
-                //if(e.data.rotation > 360) {
-                //    e.data.rotation = 0;
-                //}
+                if (input == 17) {
+                    e.data.vx = -50;
+                }
 
+                e.data.vspeed = ((e.data.x - last_x) / 5) + 1;
+                //e.data.vspeed = (e.data._vx / 50 * e.data._vdx) + 1;
+                //if (e.data.vspeed < 0.75)
+                //    e.data.vspeed = 0.75;
 
+                if (e.data.x > position.max.x)
+                    position.max.x = e.data.x;
+                if (e.data.y > position.max.y)
+                    position.max.y = e.data.y;
+
+                if (e.data.x < position.min.x || position.min.x === null)
+                    position.min.x = e.data.x;
+                if (e.data.y < position.min.y || position.min.y === null)
+                    position.min.y = e.data.y;
             });
+
+            this.entities.forEach(function (entity) {
+                if (entity.data.attr.x + GAME_WIDTH < position.min.x) {
+                    self.entities.splice(self.entities.indexOf(entity), 1);
+                }
+            });
+
+            let BLOCK_WIDTH = 108,
+                BLOCK_HEIGHT = 239;
+
+            function createBlock(offset, specified) {
+                var attr = {};
+
+                if (specified) {
+                    attr = {
+                        y: -offset,
+                        x: position.max.x + GAME_WIDTH
+                    };
+
+                    self.createEntity('TOP_BLOCK_DIRT', {
+                        collide: true,
+                        attr: attr
+                    });
+                } else {
+                    attr = {
+                        y: GAME_HEIGHT - BLOCK_HEIGHT + offset,
+                        x: position.max.x + GAME_WIDTH
+                    };
+
+                    self.createEntity('BOTTOM_BLOCK_DIRT', {
+                        collide: true,
+                        attr: attr
+                    });
+                }
+
+                return attr;
+            }
+
+            if ((this.ticks % this.sequence) == 0) {
+
+                if (this.level <= 1) {
+                    createBlock(20, rand(0, 1));
+                } else if (this.level <= 3) {
+                    createBlock(10, rand(0, 1));
+                    this.sequence = 15;
+                } else { //if (this.level <= 6) {
+                    createBlock(5, rand(0, 1));
+                    this.sequence = 10;
+                    //} else {
+                    //    this.sequence = 20 - this.level;
+                    //    if(this.sequence < 8)
+                    //        this.sequence = 8;
+                    //
+                    //    var i = rand(45, 120);
+                    //    var f = rand(0, 20);
+                    //    var h = rand(0, 80);
+                    //    if(f < 3) {
+                    //        createBlock(100 - h, 1);
+                    //        createBlock(h, 0);
+                    //    } else if (f <= 5) {
+                    //        createBlock(45, 1);
+                    //        createBlock(45, 0);
+                    //    } else if (f <= 7) {
+                    //        createBlock(60, 1);
+                    //        createBlock(60, 0);
+                    //    } else if (f > 8) {
+                    //        createBlock(i, 1);
+                    //        createBlock(i, 0);
+                    //    }
+                }
+
+                //} else if (this.level <= 200) {
+                //    this.sequence = rand(15, 25) - Math.round(this.level / 20);
+                //
+                //    var f = rand(0, 10);
+                //    var i = rand(0, 80);
+                //    if (f <= 3) {
+                //        createBlock(100 - i, rand(0,1));
+                //        createBlock(i, rand(0,1));
+                //    }
+                //    else if (f > 3) {
+                //        createBlock(100 - i, 1);
+                //        createBlock(i, 0);
+                //    } else
+                //        createBlock(0, rand(0, 1))
+                //
+                //}
+
+            }
 
             this.renderWorld();
         }
@@ -204,10 +385,12 @@ function app(server, app) {
 
             let last_update = +new Date();
             this.gameThread = setInterval(() => {
+                this.ticks++;
+                this.time += this.tickrate;
                 let current_time = +new Date();
                 this.update((current_time - last_update) / 100);
                 last_update = current_time;
-            }, 11);
+            }, this.tickrate);
         }
 
         join(player) {
@@ -238,7 +421,8 @@ function app(server, app) {
         }
 
         leave(player) {
-            if (player.id == this.owner.id) {
+
+            if (player.id == this.owner.id && !this.is_playing) {
                 return this.destroy();
             }
 
@@ -251,6 +435,10 @@ function app(server, app) {
 
             player.lobby = null;
 
+            if (this.players.length < 1) {
+                return this.destroy();
+            }
+
             var playersList = this.players.map(e => {
                 var p = {};
                 p.id = e.sid;
@@ -258,6 +446,7 @@ function app(server, app) {
                 p.points = e.points;
                 return p;
             });
+
 
             this.players.forEach(function (e) {
                 if (e.socket) {
@@ -305,6 +494,12 @@ function app(server, app) {
                 socket.on('update', function (packet) {
                     if (typeof self.players[ip] !== 'undefined') {
                         self.players[ip].update(packet);
+                    }
+                });
+
+                socket.on('collide', function (pid, target) {
+                    if (typeof self.players[ip] !== 'undefined') {
+                        self.players[ip].collide(pid, target);
                     }
                 });
 

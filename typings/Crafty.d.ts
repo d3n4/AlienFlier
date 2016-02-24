@@ -11,9 +11,12 @@ declare module CraftyModule {
         mobile: boolean;
         viewport: CraftyViewport;
         timer: CraftyTimer;
+        stage: {
+            elem: HTMLElement
+        };
 
-        //(selector: string): Entities;
-        //(id: number): Entity;
+        (selector: string): Entities;
+        (id: number): Entity;
 
         get(): Entities;
         get(index: number): Entity;
