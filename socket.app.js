@@ -29,6 +29,15 @@ function app(server, app) {
             this.data = {};
             this.inputPool = [];
             this.level = 1;
+            this.bonuses = [];
+        }
+
+        addBonus(bonus_attr, seconds) {
+            var time = Math.round(+new Date() / 1000) + seconds;
+            this.bonuses.push({
+                data: bonus_attr,
+                time: time
+            });
         }
 
         leaveLobby() {
@@ -46,9 +55,9 @@ function app(server, app) {
 
         }
 
-        collide(pid, target) {
+        collide(pid, target, target_pid) {
             if (this.lobby)
-                this.lobby.collide(pid, target);
+                this.lobby.collide(pid, target, target_pid);
         }
     }
 
@@ -86,11 +95,14 @@ function app(server, app) {
                 }
             });
 
+            self.entities = [];
+
             players = null;
         }
 
         initializeWorld() {
             this.players.forEach(function (e, i) {
+                e.bonuses = [];
                 e.data = {
                     x: 0,
                     y: GAME_HEIGHT / 2 - 32,//100 + i * 32,
@@ -139,7 +151,38 @@ function app(server, app) {
             }
         }
 
-        collide(pid, target) {
+        collide(pid, target, target_pid) {
+            console.log('COLLIDE WITH', target, target_pid);
+
+            if(target == 'PLAYER') {
+                var player1 = this.getPlayer(pid);
+                var player2 = this.getPlayer(target_pid);
+
+                if(player1 && player2) {
+
+                    // if diff - than player1 left and player2 is right
+                    var diff_x = player1.data.x - player2.data.x;
+                    // if diff - than player1 down and player2 is up
+                    var diff_y = player1.data.y - player2.data.y;
+
+                    if(diff_x > 0) {
+                        player1.data.x += 16;
+                        player2.data.x -= 16;
+                    } else {
+                        player1.data.x -= 16;
+                        player2.data.x += 16;
+                    }
+
+                    if(diff_y > 0) {
+                        player1.data.y += 16;
+                        player2.data.y -= 16;
+                    } else {
+                        player1.data.y -= 16;
+                        player2.data.y += 16;
+                    }
+                }
+            }
+
             if (target == 'BOTTOM_BLOCK_DIRT' || target == 'TOP_BLOCK_DIRT') {
                 var player = this.getPlayer(pid);
                 console.log('player died', pid, target, player);
@@ -147,6 +190,42 @@ function app(server, app) {
                     this.die(player);
                 }
             }
+            //, 'BONUS_S', 'BONUS_X'
+
+            if (target == 'BONUS_X') {
+                this.ticks += 50;
+            }
+
+            if (target == 'BONUS_S') {
+                var player = this.getPlayer(pid);
+                if (player) {
+                    player.addBonus({
+                        speed: 10
+                    }, 10);
+                    //player.points += 50;
+                }
+            }
+
+            if (target == 'BONUS_G') {
+                var player = this.getPlayer(pid);
+                if (player) {
+                    player.addBonus({
+                        gravity: 10
+                    }, 10);
+                    //player.points += 100;
+                }
+            }
+
+            if(target == 'BONUS_R') {
+                var player = this.getPlayer(pid);
+                if (player) {
+                    player.addBonus({
+                        rotate: true
+                    }, 5);
+                    //player.points += 200;
+                }
+            }
+
         }
 
         update(deltaTime) {
@@ -171,13 +250,42 @@ function app(server, app) {
 
                 let last_x = e.data.x;
 
+
+
                 if (e.points < self.ticks)
                     e.points = self.ticks;
 
+                e.data.points = e.points;
+
                 e.data.speed = 15 + Math.round(self.level / 2);
 
-                e.data.y += e.data.gravity * deltaTime;
-                e.data.x += e.data.speed * deltaTime;
+                var gravity = e.data.gravity, speed = e.data.speed;
+
+                e.data.rotate = false;
+
+                e.bonuses.forEach(function (bonus) {
+                    var _time = Math.round(+new Date() / 1000);
+
+                    if (_time > bonus.time) {
+                        e.bonuses.splice(e.bonuses.indexOf(bonus), 1);
+                        return;
+                    }
+
+                    if (bonus.data.speed) {
+                        speed += bonus.data.speed;
+                    }
+
+                    if (bonus.data.gravity) {
+                        gravity += bonus.data.gravity;
+                    }
+
+                    if(bonus.data.rotate) {
+                        e.data.rotate = true;
+                    }
+                });
+
+                e.data.y += gravity * deltaTime;
+                e.data.x += speed * deltaTime;
 
                 if (e.data.vx) {
                     if (e.data.vx < 0) {
@@ -300,16 +408,37 @@ function app(server, app) {
                 return attr;
             }
 
-            if ((this.ticks % this.sequence) == 0) {
+            if (this.ticks % 35 == 0) {
+                self.createEntity(['BONUS_G', 'BONUS_S', 'BONUS_R', 'BONUS_X'][rand(0, 3)], {
+                    attr: {
+                        y: rand(64, GAME_HEIGHT - 64),
+                        x: position.max.x + GAME_WIDTH,
+                        w: 32,
+                        h: 32
+                    }
+                });
+                //self.createEntity('BONUS_R', {
+                //    attr: {
+                //        y: rand(64, GAME_HEIGHT - 64),
+                //        x: position.max.x + GAME_WIDTH,
+                //        w: 32,
+                //        h: 32
+                //    }
+                //});
+            }
 
+            //this.level = 100;
+            if ((this.ticks % this.sequence) == 0) {
+                var offset, diff, mod;
                 if (this.level <= 1) {
-                    createBlock(20, rand(0, 1));
+                    createBlock(60, rand(0, 1));
                 } else if (this.level <= 3) {
-                    createBlock(10, rand(0, 1));
+                    createBlock(30, rand(0, 1));
                     this.sequence = 15;
-                } else { //if (this.level <= 6) {
-                    createBlock(5, rand(0, 1));
-                    this.sequence = 10;
+                } else if (this.level <= 6) {
+                    createBlock(90, 1);
+                    createBlock(90, 0);
+                    this.sequence = 20;
                     //} else {
                     //    this.sequence = 20 - this.level;
                     //    if(this.sequence < 8)
@@ -331,6 +460,34 @@ function app(server, app) {
                     //        createBlock(i, 1);
                     //        createBlock(i, 0);
                     //    }
+                } else if (this.level <= 10) {
+                    offset = 300;
+                    diff = offset / 2;
+                    mod = Math.sin(this.ticks) * 230;
+                    createBlock(diff - mod, 1);
+                    createBlock(diff + mod, 0);
+                    this.sequence = 7;
+                } else if (this.level <= 20) {
+                    offset = 250;
+                    diff = offset / 2;
+                    mod = Math.sin(this.ticks) * 230;
+                    createBlock(diff - mod, 1);
+                    createBlock(diff + mod, 0);
+                    this.sequence = 6;
+                } else if (this.level <= 30) {
+                    offset = 200;
+                    diff = offset / 2;
+                    mod = Math.sin(this.ticks) * 230;
+                    createBlock(diff - mod, 1);
+                    createBlock(diff + mod, 0);
+                    this.sequence = 6;
+                } else {
+                    offset = 200;
+                    diff = offset / 2;
+                    mod = Math.cos(this.ticks) * 230;
+                    createBlock(diff - mod, 1);
+                    createBlock(diff + mod, 0);
+                    this.sequence = 20;
                 }
 
                 //} else if (this.level <= 200) {
@@ -497,9 +654,9 @@ function app(server, app) {
                     }
                 });
 
-                socket.on('collide', function (pid, target) {
+                socket.on('collide', function (pid, target, target_pid) {
                     if (typeof self.players[ip] !== 'undefined') {
-                        self.players[ip].collide(pid, target);
+                        self.players[ip].collide(pid, target, target_pid);
                     }
                 });
 
